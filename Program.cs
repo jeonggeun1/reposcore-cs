@@ -1,4 +1,4 @@
-﻿using Cocona;
+using Cocona;
 using System;
 using System.Collections.Generic;
 using Octokit;
@@ -20,7 +20,25 @@ CoconaApp.Run((
 
     string owner = repos[0];
     string repo = repos[1];
-    
+
+    // format 옵션을 쉼표로 분리하여 리스트로 변환
+    var formats = string.IsNullOrWhiteSpace(format)
+        ? new List<string> { "json" }
+        : new List<string>(format.Split(',', StringSplitOptions.RemoveEmptyEntries));
+
+    // 유효한 형식 리스트 정의
+    var validFormats = new HashSet<string> { "json", "csv" };
+
+    // 지원하지 않는 형식이 포함되었는지 확인
+    foreach (var f in formats)
+    {
+        if (!validFormats.Contains(f.Trim().ToLower()))
+        {
+            Console.WriteLine($"! 지원되지 않는 출력 형식입니다: {f} (지원 형식: json, csv)");
+            Environment.Exit(1);
+        }
+    }
+
     Console.WriteLine($"Repository: {string.Join("\n ", repos)}");
 
     if (verbose)
@@ -56,15 +74,11 @@ CoconaApp.Run((
 
     try
     {
-        // format 옵션을 쉼표로 분리하여 리스트로 변환
-        var formats = string.IsNullOrWhiteSpace(format)
-            ? new List<string> { "json" }
-            : new List<string>(format.Split(',', StringSplitOptions.RemoveEmptyEntries));
-
         // 출력 디렉토리 기본값 처리
         var outputDir = string.IsNullOrWhiteSpace(output) ? "output" : output;
 
-        var analyzer = new GitHubAnalyzer(token);
+        // token이 null일 수 있으므로 안전하게 처리
+        var analyzer = new GitHubAnalyzer(token ?? string.Empty);
         analyzer.Analyze(owner, repo, outputDir, formats); // 변경된 Analyze 호출
     }
     catch (Exception ex)
